@@ -1,24 +1,25 @@
+
 {
   "Comment": "Finds prime numbers between the parameters 'low' and 'high' (inclusive). 2-1000 are supported.",
-  "StartAt": "Candidates",
+  "StartAt": "Generate candidate array",
   "States": {
-    "Candidates": {
+    "Generate candidate array": {
       "Type": "Pass",
       "Parameters": {
         "candidates.$": "States.ArrayRange($.low, $.high, 1)"
       },
-      "Next": "Map"
+      "Next": "For each candidate"
     },
-    "Map": {
+    "For each candidate": {
       "Type": "Map",
       "ItemsPath": "$.candidates",
       "ItemProcessor": {
         "ProcessorConfig": {
           "Mode": "INLINE"
         },
-        "StartAt": "Call",
+        "StartAt": "Call IsPrime with candidate",
         "States": {
-          "Call": {
+          "Call IsPrime with candidate": {
             "Type": "Task",
             "Resource": "arn:aws:states:::aws-sdk:sfn:startSyncExecution",
             "Parameters": {
@@ -28,29 +29,22 @@
                 "x.$": "$"
               }
             },
-            "Next": "Parse"
+            "Next": "Parse IsPrime output"
           },
-          "Parse": {
+          "Parse IsPrime output": {
             "Type": "Pass",
             "Parameters": {
               "output.$": "States.StringToJson($.Output)"
             },
-            "Next": "Res"
-          },
-          "Res": {
-            "Type": "Pass",
-            "Parameters": {
-              "x.$": "$.output.x",
-              "prime.$": "$.output.prime"
-            },
+            "OutputPath": "$.output",
             "End": true
           }
         }
       },
-      "Label": "Map",
-      "Next": "Output"
+      "Label": "Foreachcandidate",
+      "Next": "Filter prime numbers"
     },
-    "Output": {
+    "Filter prime numbers": {
       "Type": "Pass",
       "Parameters": {
         "prime.$": "$[?(@.prime == true)].x"
