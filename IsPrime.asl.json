@@ -1,5 +1,5 @@
 {
-  "Comment": "Check if the number in the parameter 'x' is a prime number. Values of x from 1-1000 (inclusive) are supported.",
+  "Comment": "Check if the number in the parameter 'x' is a prime number. Values of x from 2-1000 (inclusive) are supported.",
   "StartAt": "Add starting y",
   "States": {
     "Add starting y": {
