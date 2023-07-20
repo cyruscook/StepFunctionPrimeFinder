@@ -1,138 +1,90 @@
 {
   "Comment": "Check if the number in the parameter 'x' is a prime number. Values of x from 1-1000 (inclusive) are supported.",
-  "StartAt": "CheckNum",
+  "StartAt": "Add starting y",
   "States": {
-    "CheckNum": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Variable": "$",
-          "IsNumeric": true,
-          "Next": "Move number input"
-        }
-      ],
-      "Default": "Add starting y"
-    },
     "Add starting y": {
       "Type": "Pass",
-      "Next": "Range",
+      "Next": "Create Array Range",
       "Result": {
         "y": 2
       },
       "ResultPath": "$.proc"
     },
-    "Move number input": {
-      "Type": "Pass",
-      "Parameters": {
-        "x.$": "$",
-        "proc": {
-          "y": 2
-        }
-      },
-      "Next": "Range"
-    },
-    "Range": {
+    "Create Array Range": {
       "Type": "Pass",
       "Parameters": {
         "arr.$": "States.ArrayRange(1, $.x, 1)",
         "y.$": "$.proc.y"
       },
       "ResultPath": "$.proc",
-      "Next": "Partition"
+      "Next": "Create Array Partition"
     },
-    "Partition": {
+    "Create Array Partition": {
       "Type": "Pass",
       "Parameters": {
         "part.$": "States.ArrayPartition($.proc.arr, $.proc.y)",
         "y.$": "$.proc.y"
       },
       "ResultPath": "$.proc",
-      "Next": "Remainder"
+      "Next": "Calculate Remainder"
     },
-    "Remainder": {
+    "Calculate Remainder": {
       "Type": "Pass",
       "Parameters": {
         "rem.$": "States.ArrayLength(States.ArrayGetItem($.proc.part, States.MathAdd(States.ArrayLength($.proc.part), -1)))",
         "y.$": "$.proc.y"
       },
       "ResultPath": "$.proc",
-      "Next": "CheckRem"
+      "Next": "Check Remainder"
     },
-    "CheckRem": {
+    "Check Remainder": {
       "Type": "Choice",
       "Choices": [
         {
           "Variable": "$.proc.rem",
           "NumericEqualsPath": "$.proc.y",
-          "Next": "NotPrime"
+          "Next": "Not Prime",
+          "Comment": "No Remainder (Divisible)"
         }
       ],
-      "Default": "NextY"
+      "Default": "Move to next y"
     },
-    "NextY": {
+    "Move to next y": {
       "Type": "Pass",
       "Parameters": {
         "y.$": "States.MathAdd($.proc.y,1)",
         "doubley.$": "States.MathAdd(States.MathAdd($.proc.y,$.proc.y), 2)"
       },
-      "Next": "ShouldCheckY",
+      "Next": "Should check y",
       "ResultPath": "$.proc"
     },
-    "ShouldCheckY": {
+    "Should check y": {
       "Type": "Choice",
       "Choices": [
         {
           "Variable": "$.proc.doubley",
           "NumericLessThanPath": "$.x",
-          "Next": "Range"
+          "Next": "Create Array Range",
+          "Comment": "y*2 < x"
         }
       ],
-      "Default": "FoundPrime"
+      "Default": "Is Prime"
     },
-    "NotPrime": {
+    "Not Prime": {
       "Type": "Pass",
-      "Next": "HasToken",
-      "ResultPath": "$.output",
       "Parameters": {
         "x.$": "$.x",
         "prime": false
-      }
+      },
+      "End": true
     },
-    "FoundPrime": {
+    "Is Prime": {
       "Type": "Pass",
       "Parameters": {
         "x.$": "$.x",
         "prime": true
       },
-      "Next": "HasToken",
-      "ResultPath": "$.output"
-    },
-    "HasToken": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Variable": "$.taskToken",
-          "IsPresent": true,
-          "Next": "SendResult"
-        }
-      ],
-      "Default": "Make output"
-    },
-    "Make output": {
-      "Type": "Pass",
-      "End": true,
-      "OutputPath": "$.output"
-    },
-    "SendResult": {
-      "Type": "Task",
-      "End": true,
-      "Parameters": {
-        "Output.$": "States.JsonToString($.output)",
-        "TaskToken.$": "$.taskToken"
-      },
-      "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskSuccess",
-      "ResultPath": null,
-      "OutputPath": "$.output"
+      "End": true
     }
   }
 }
