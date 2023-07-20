@@ -1,5 +1,5 @@
 {
-  "Comment": "Finds prime numbers between the parameters 'low' and 'high' (inclusive)",
+  "Comment": "Finds prime numbers between the parameters 'low' and 'high' (inclusive). 2-1000 are supported.",
   "StartAt": "Candidates",
   "States": {
     "Candidates": {
