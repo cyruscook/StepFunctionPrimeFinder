@@ -1,0 +1,158 @@
+{
+  "Comment": "Check if the number in the parameter 'x' is a prime number",
+  "StartAt": "CheckNum",
+  "States": {
+    "CheckNum": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$",
+          "IsNumeric": true,
+          "Next": "StartNum"
+        }
+      ],
+      "Default": "CheckFillToken"
+    },
+    "CheckFillToken": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.taskToken",
+          "IsPresent": true,
+          "Next": "StartToken"
+        }
+      ],
+      "Default": "StartNoToken"
+    },
+    "StartToken": {
+      "Type": "Pass",
+      "Parameters": {
+        "x.$": "$.x",
+        "y": 2,
+        "taskToken.$": "$.taskToken"
+      },
+      "Next": "Range"
+    },
+    "StartNoToken": {
+      "Type": "Pass",
+      "Parameters": {
+        "x.$": "$.x",
+        "y": 2,
+        "taskToken": ""
+      },
+      "Next": "Range"
+    },
+    "StartNum": {
+      "Type": "Pass",
+      "Parameters": {
+        "x.$": "$",
+        "y": 2,
+        "taskToken": ""
+      },
+      "Next": "Range"
+    },
+    "Range": {
+      "Type": "Pass",
+      "Parameters": {
+        "arr.$": "States.ArrayRange(1, $.x, 1)"
+      },
+      "ResultPath": "$.rem",
+      "Next": "Partition"
+    },
+    "Partition": {
+      "Type": "Pass",
+      "Parameters": {
+        "part.$": "States.ArrayPartition($.rem.arr, $.y)"
+      },
+      "ResultPath": "$.rem",
+      "Next": "Remainder"
+    },
+    "Remainder": {
+      "Type": "Pass",
+      "Parameters": {
+        "rem.$": "States.ArrayLength(States.ArrayGetItem($.rem.part, States.MathAdd(States.ArrayLength($.rem.part), -1)))"
+      },
+      "ResultPath": "$.rem",
+      "Next": "CheckRem"
+    },
+    "CheckRem": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.rem.rem",
+          "NumericEqualsPath": "$.y",
+          "Next": "NotPrime"
+        }
+      ],
+      "Default": "NextY"
+    },
+    "NextY": {
+      "Type": "Pass",
+      "Parameters": {
+        "y.$": "States.MathAdd($.y,1)",
+        "doubley.$": "States.MathAdd(States.MathAdd($.y,$.y), 2)",
+        "x.$": "$.x",
+        "taskToken.$": "$.taskToken"
+      },
+      "Next": "ShouldCheckY"
+    },
+    "ShouldCheckY": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.doubley",
+          "NumericLessThanPath": "$.x",
+          "Next": "Range"
+        }
+      ],
+      "Default": "FoundPrime"
+    },
+    "NotPrime": {
+      "Type": "Pass",
+      "Parameters": {
+        "output": {
+          "x.$": "$.x",
+          "prime": false
+        },
+        "taskToken.$": "$.taskToken"
+      },
+      "Next": "HasToken"
+    },
+    "FoundPrime": {
+      "Type": "Pass",
+      "Parameters": {
+        "output": {
+          "x.$": "$.x",
+          "prime": true
+        },
+        "taskToken.$": "$.taskToken"
+      },
+      "Next": "HasToken"
+    },
+    "HasToken": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.taskToken",
+          "StringEquals": "",
+          "Next": "End"
+        }
+      ],
+      "Default": "SendResult"
+    },
+    "SendResult": {
+      "Type": "Task",
+      "End": true,
+      "Parameters": {
+        "Output.$": "States.JsonToString($.output)",
+        "TaskToken.$": "$.taskToken"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskSuccess"
+    },
+    "End": {
+      "Type": "Pass",
+      "InputPath": "$.output",
+      "End": true
+    }
+  }
+}

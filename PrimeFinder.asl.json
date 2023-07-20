@@ -1,0 +1,61 @@
+{
+  "Comment": "Finds prime numbers between the parameters 'low' and 'high' (inclusive)",
+  "StartAt": "Candidates",
+  "States": {
+    "Candidates": {
+      "Type": "Pass",
+      "Parameters": {
+        "candidates.$": "States.ArrayRange($.low, $.high, 1)"
+      },
+      "Next": "Map"
+    },
+    "Map": {
+      "Type": "Map",
+      "ItemsPath": "$.candidates",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "Call",
+        "States": {
+          "Call": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::aws-sdk:sfn:startSyncExecution",
+            "Parameters": {
+              "StateMachineArn": "arn:aws:states:eu-west-1:{account_id}:stateMachine:{isprime_sm_name}",
+              "Input": {
+                "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+                "x.$": "$"
+              }
+            },
+            "Next": "Parse"
+          },
+          "Parse": {
+            "Type": "Pass",
+            "Parameters": {
+              "output.$": "States.StringToJson($.Output)"
+            },
+            "Next": "Res"
+          },
+          "Res": {
+            "Type": "Pass",
+            "Parameters": {
+              "x.$": "$.output.x",
+              "prime.$": "$.output.prime"
+            },
+            "End": true
+          }
+        }
+      },
+      "Label": "Map",
+      "Next": "Output"
+    },
+    "Output": {
+      "Type": "Pass",
+      "Parameters": {
+        "prime.$": "$[?(@.prime == true)].x"
+      },
+      "End": true
+    }
+  }
+}
